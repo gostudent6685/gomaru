@@ -1,4 +1,4 @@
-# gomaru-checkup v0.25
+# gomaru-checkup v0.26
 # [DONE] get informations of whole episode
 # [TODO] save informations to local database
 # [TODO] check whether new episode is
@@ -31,12 +31,31 @@ def get_page(url):
     return html
 
 URL = "http://marumaru.in/b/manga/65484"
-html = get_page(URL)
-bsObj = bsoup(html.read(), "html.parser")
-content = bsObj.find("div", {"class":"content"})
+
+try_maximum = 5
+for count in range(try_maximum):
+    html = get_page(URL)
+    if html == None:
+        if count+1 < try_maximum:
+            print("HTTP Error: trying again...")
+            continue
+        else:
+            print("HTTP Error: exceeded number of attempts")
+            exit()
+    bsObj = bsoup(html.read(), "html.parser")
+    content = bsObj.find("div", {"class":"content"})
+    if content != None:
+        break
+    elif count+1 == try_maximum:
+        print("Data Parsing Error: no contents found")
+        exit()
+        
 
 link_re = "http\:\/\/[a-z]*(\.|)(wasabisyrup|shencomics|yuncomics)\.com\/archives\/[0-9a-zA-Z|\_\-\+]+"
 manga_list = content.findAll("a", {"href":re.compile(link_re)})
+if manga_list == None:
+    print("Data Parsing Error: no contents found")
+    exit()
 for each_manga in manga_list:
     # " " -> ascii 32 'SP', chr(160) -> 'NBSP'
     text = each_manga.get_text().replace(" ","").replace(chr(160), "")
